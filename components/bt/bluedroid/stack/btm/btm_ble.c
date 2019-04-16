@@ -66,13 +66,14 @@ extern void gatt_notify_enc_cmpl(BD_ADDR bd_addr);
 **                  bd_name          - Name of the peer device.  NULL if unknown.
 **                  dev_type         - Remote device's device type.
 **                  addr_type        - LE device address type.
+**                  auth_mode        - auth mode
 **
 ** Returns          TRUE if added OK, else FALSE
 **
 *******************************************************************************/
 #if (SMP_INCLUDED == TRUE)
 BOOLEAN BTM_SecAddBleDevice (BD_ADDR bd_addr, BD_NAME bd_name, tBT_DEVICE_TYPE dev_type,
-                             tBLE_ADDR_TYPE addr_type)
+                             tBLE_ADDR_TYPE addr_type, UINT32 auth_mode)
 {
     tBTM_SEC_DEV_REC  *p_dev_rec;
     UINT8               i = 0;
@@ -125,6 +126,7 @@ BOOLEAN BTM_SecAddBleDevice (BD_ADDR bd_addr, BD_NAME bd_name, tBT_DEVICE_TYPE d
     }
     p_dev_rec->device_type |= dev_type;
     p_dev_rec->ble.ble_addr_type = addr_type;
+    p_dev_rec->ble.auth_mode = auth_mode;
 
     memcpy (p_dev_rec->ble.pseudo_addr, bd_addr, BD_ADDR_LEN);
     /* sync up with the Inq Data base*/
@@ -885,8 +887,9 @@ tBTM_SEC_ACTION btm_ble_determine_security_act(BOOLEAN is_originator, BD_ADDR bd
             return BTM_SEC_OK;
         }
 
-        if (security_required & BTM_SEC_OUT_MITM)
+        if (security_required & BTM_SEC_OUT_MITM) {
             auth_req |= BTM_LE_AUTH_REQ_MITM;
+        }
     }
     else
     {
@@ -896,8 +899,9 @@ tBTM_SEC_ACTION btm_ble_determine_security_act(BOOLEAN is_originator, BD_ADDR bd
             return BTM_SEC_OK;
         }
 
-        if (security_required & BTM_SEC_IN_MITM)
+        if (security_required & BTM_SEC_IN_MITM) {
             auth_req |= BTM_LE_AUTH_REQ_MITM;
+        }
     }
 
     tBTM_BLE_SEC_REQ_ACT ble_sec_act = BTM_BLE_SEC_REQ_ACT_NONE;
@@ -905,11 +909,13 @@ tBTM_SEC_ACTION btm_ble_determine_security_act(BOOLEAN is_originator, BD_ADDR bd
 
     BTM_TRACE_DEBUG ("%s ble_sec_act %d", __func__ , ble_sec_act);
 
-    if (ble_sec_act == BTM_BLE_SEC_REQ_ACT_DISCARD)
+    if (ble_sec_act == BTM_BLE_SEC_REQ_ACT_DISCARD) {
         return BTM_SEC_ENC_PENDING;
+    }
 
-    if (ble_sec_act == BTM_BLE_SEC_REQ_ACT_NONE)
+    if (ble_sec_act == BTM_BLE_SEC_REQ_ACT_NONE) {
         return BTM_SEC_OK;
+    }
 
     UINT8 sec_flag = 0;
     BTM_GetSecurityFlagsByTransport(bdaddr, &sec_flag, BT_TRANSPORT_LE);
@@ -918,11 +924,13 @@ tBTM_SEC_ACTION btm_ble_determine_security_act(BOOLEAN is_originator, BD_ADDR bd
     BOOLEAN is_key_mitm = FALSE;
     if (sec_flag & (BTM_SEC_FLAG_ENCRYPTED| BTM_SEC_FLAG_LKEY_KNOWN))
     {
-        if (sec_flag & BTM_SEC_FLAG_ENCRYPTED)
+        if (sec_flag & BTM_SEC_FLAG_ENCRYPTED) {
             is_link_encrypted = TRUE;
+        }
 
-        if (sec_flag & BTM_SEC_FLAG_LKEY_AUTHED)
+        if (sec_flag & BTM_SEC_FLAG_LKEY_AUTHED) {
             is_key_mitm = TRUE;
+        }
     }
 
     if (auth_req & BTM_LE_AUTH_REQ_MITM)
@@ -931,16 +939,18 @@ tBTM_SEC_ACTION btm_ble_determine_security_act(BOOLEAN is_originator, BD_ADDR bd
         {
             return BTM_SEC_ENCRYPT_MITM;
         } else {
-            if (is_link_encrypted)
+            if (is_link_encrypted) {
                 return BTM_SEC_OK;
-            else
+            } else {
                 return BTM_SEC_ENCRYPT;
+            }
         }
     } else {
-        if (is_link_encrypted)
+        if (is_link_encrypted) {
             return BTM_SEC_OK;
-        else
+        } else {
             return BTM_SEC_ENCRYPT_NO_MITM;
+        }
     }
 
     return BTM_SEC_OK;
@@ -1010,8 +1020,9 @@ BOOLEAN btm_ble_start_sec_check(BD_ADDR bd_addr, UINT16 psm, BOOLEAN is_originat
             break;
     }
 
-    if (ble_sec_act == BTM_BLE_SEC_NONE)
+    if (ble_sec_act == BTM_BLE_SEC_NONE) {
         return status;
+    }
 
     tL2C_LCB *p_lcb = l2cu_find_lcb_by_bd_addr(bd_addr, BT_TRANSPORT_LE);
     p_lcb->sec_act = sec_act;
@@ -1466,13 +1477,14 @@ tBTM_STATUS btm_ble_set_encryption (BD_ADDR bd_addr, void *p_ref_data, UINT8 lin
                 break;
             }
         }
-
+#if (SMP_SLAVE_CON_PARAMS_UPD_ENABLE == TRUE)
         // already have encrypted information, do not need to update connection parameters
         if(link_role == BTM_ROLE_SLAVE && (p_rec->ble.key_type & BTM_LE_KEY_PENC)) {
             p_rec->ble.skip_update_conn_param = true;
         } else {
             p_rec->ble.skip_update_conn_param = false;
         }
+#endif
         if (SMP_Pair(bd_addr) == SMP_STARTED) {
             cmd = BTM_CMD_STARTED;
             p_rec->sec_state = BTM_SEC_STATE_AUTHENTICATING;

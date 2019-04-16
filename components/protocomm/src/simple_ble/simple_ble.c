@@ -103,7 +103,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
         g_ble_cfg_p->exec_write_fn(event, gatts_if, param);
         break;
     case ESP_GATTS_MTU_EVT:
-        ESP_LOGV(TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
+        ESP_LOGD(TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
         if (g_ble_cfg_p->set_mtu_fn) {
             g_ble_cfg_p->set_mtu_fn(event, gatts_if, param);
         }
@@ -189,7 +189,14 @@ esp_err_t simple_ble_start(simple_ble_cfg_t *cfg)
         return ret;
     }
 
+#ifdef CONFIG_BTDM_CONTROLLER_MODE_BTDM
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
+#elif defined CONFIG_BTDM_CONTROLLER_MODE_BLE_ONLY
     ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+#else
+    ESP_LOGE(TAG, "Configuration mismatch. Select BLE Only or BTDM mode from menuconfig");
+    return ESP_FAIL;
+#endif
     if (ret) {
         ESP_LOGE(TAG, "%s enable controller failed %d", __func__, ret);
         return ret;

@@ -618,7 +618,7 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
         esp_avrc_ct_register_callback(bt_app_rc_ct_cb);
 
         /* set discoverable and connectable mode, wait to be connected */
-        esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+        esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
         break;
     }
     default:
@@ -650,8 +650,9 @@ void app_main()
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           //2-channels
         .communication_format = I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB,
         .dma_buf_count = 6,
-        .dma_buf_len = 60,                                                      //
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1                                //Interrupt level 1
+        .dma_buf_len = 60,
+        .intr_alloc_flags = 0,                                                  //Default interrupt priority
+        .tx_desc_auto_clear = true                                              //Auto clear tx descriptor on underflow
     };
 
 

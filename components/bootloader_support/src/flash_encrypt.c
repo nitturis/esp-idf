@@ -18,15 +18,14 @@
 #include "esp_image_format.h"
 #include "esp_flash_encrypt.h"
 #include "esp_flash_partitions.h"
-#include "esp_flash_data_types.h"
 #include "esp_secure_boot.h"
 #include "esp_efuse.h"
 #include "esp_log.h"
-#include "rom/secure_boot.h"
+#include "esp32/rom/secure_boot.h"
 #include "soc/rtc_wdt.h"
 
-#include "rom/cache.h"
-#include "rom/spi_flash.h"   /* TODO: Remove this */
+#include "esp32/rom/cache.h"
+#include "esp32/rom/spi_flash.h"   /* TODO: Remove this */
 
 static const char *TAG = "flash_encrypt";
 
@@ -163,7 +162,7 @@ static esp_err_t encrypt_flash_contents(uint32_t flash_crypt_cnt, bool flash_cry
 
     /* If the last flash_crypt_cnt bit is burned or write-disabled, the
        device can't re-encrypt itself. */
-    if (flash_crypt_wr_dis || flash_crypt_cnt == 0xFF) {
+    if (flash_crypt_wr_dis) {
         ESP_LOGE(TAG, "Cannot re-encrypt data (FLASH_CRYPT_CNT 0x%02x write disabled %d", flash_crypt_cnt, flash_crypt_wr_dis);
         return ESP_FAIL;
     }
@@ -200,8 +199,8 @@ static esp_err_t encrypt_flash_contents(uint32_t flash_crypt_cnt, bool flash_cry
     ESP_LOGD(TAG, "All flash regions checked for encryption pass");
 
     /* Set least significant 0-bit in flash_crypt_cnt */
-    int ffs_inv = __builtin_ffs((~flash_crypt_cnt) & 0xFF);
-    /* ffs_inv shouldn't be zero, as zero implies flash_crypt_cnt == 0xFF */
+    int ffs_inv = __builtin_ffs((~flash_crypt_cnt) & EFUSE_RD_FLASH_CRYPT_CNT);
+    /* ffs_inv shouldn't be zero, as zero implies flash_crypt_cnt == EFUSE_RD_FLASH_CRYPT_CNT (0x7F) */
     uint32_t new_flash_crypt_cnt = flash_crypt_cnt + (1 << (ffs_inv - 1));
     ESP_LOGD(TAG, "FLASH_CRYPT_CNT 0x%x -> 0x%x", flash_crypt_cnt, new_flash_crypt_cnt);
     REG_SET_FIELD(EFUSE_BLK0_WDATA0_REG, EFUSE_FLASH_CRYPT_CNT, new_flash_crypt_cnt);
@@ -340,11 +339,11 @@ esp_err_t esp_flash_encrypt_region(uint32_t src_addr, size_t data_length)
     return err;
 }
 
-void esp_flash_write_protect_crypt_cnt() 
+void esp_flash_write_protect_crypt_cnt()
 {
     uint32_t efuse_blk0 = REG_READ(EFUSE_BLK0_RDATA0_REG);
     bool flash_crypt_wr_dis = efuse_blk0 & EFUSE_WR_DIS_FLASH_CRYPT_CNT;
-    if(!flash_crypt_wr_dis) { 
+    if(!flash_crypt_wr_dis) {
         REG_WRITE(EFUSE_BLK0_WDATA0_REG, EFUSE_WR_DIS_FLASH_CRYPT_CNT);
         esp_efuse_burn_new_values();
     }

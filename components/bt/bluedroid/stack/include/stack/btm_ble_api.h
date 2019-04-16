@@ -869,6 +869,7 @@ tBTM_BLE_SCAN_SETUP_CBACK bta_ble_scan_setup_cb;
 typedef void (tBTM_START_ADV_CMPL_CBACK) (UINT8 status);
 typedef void (tBTM_START_STOP_ADV_CMPL_CBACK) (UINT8 status);
 
+typedef void (tBTM_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_CMPL_CBACK) (tBTM_STATUS status, uint8_t subcode, uint32_t length, uint8_t *device_info);
 
 
 /*****************************************************************************
@@ -905,13 +906,14 @@ void BTM_BleRegiseterConnParamCallback(tBTM_UPDATE_CONN_PARAM_CBACK *update_conn
 **                  bd_name          - Name of the peer device.  NULL if unknown.
 **                  dev_type         - Remote device's device type.
 **                  addr_type        - LE device address type.
+**                  auth_mode        - auth mode
 **
 ** Returns          TRUE if added OK, else FALSE
 **
 *******************************************************************************/
 //extern
 BOOLEAN BTM_SecAddBleDevice (BD_ADDR bd_addr, BD_NAME bd_name,
-                             tBT_DEVICE_TYPE dev_type, tBLE_ADDR_TYPE addr_type);
+                             tBT_DEVICE_TYPE dev_type, tBLE_ADDR_TYPE addr_type, UINT32 auth_mode);
 
 /*******************************************************************************
 **
@@ -1270,7 +1272,7 @@ tBTM_STATUS BTM_BleObserve(BOOLEAN start, UINT32 duration,
 *******************************************************************************/
 //extern
 tBTM_STATUS BTM_BleScan(BOOLEAN start, UINT32 duration,
-                           tBTM_INQ_RESULTS_CB *p_results_cb, tBTM_CMPL_CB *p_cmpl_cb);
+                           tBTM_INQ_RESULTS_CB *p_results_cb, tBTM_CMPL_CB *p_cmpl_cb, tBTM_INQ_DIS_CB *p_discard_cb);
 
 
 /*******************************************************************************
@@ -1800,7 +1802,7 @@ void BTM_BleTurnOnPrivacyOnRemote(BD_ADDR bd_addr,
 **
 *******************************************************************************/
 //extern
-BOOLEAN BTM_BleUpdateAdvWhitelist(BOOLEAN add_remove, BD_ADDR emote_bda, tBTM_ADD_WHITELIST_CBACK *add_wl_cb);
+BOOLEAN BTM_BleUpdateAdvWhitelist(BOOLEAN add_remove, BD_ADDR emote_bda, tBLE_ADDR_TYPE addr_type, tBTM_ADD_WHITELIST_CBACK *add_wl_cb);
 
 /*******************************************************************************
 **
@@ -2081,6 +2083,22 @@ tBTM_STATUS BTM_BleGetEnergyInfo(tBTM_BLE_ENERGY_INFO_CBACK *p_ener_cback);
 //extern
 tBTM_STATUS BTM_SetBleDataLength(BD_ADDR bd_addr, UINT16 tx_pdu_length);
 
+/*******************************************************************************
+**
+** Function         BTM_UpdateBleDuplicateExceptionalList
+**
+** Description      This function is called to update duplicate scan exceptional list.
+**
+** Parameters:      subcode: add, remove or clean duplicate scan exceptional list.
+**                  type: device info type
+**                  device_info: device information
+**                  update_exceptional_list_cmp_cb: complete callback
+**
+** Returns          status
+**
+*******************************************************************************/
+
+tBTM_STATUS BTM_UpdateBleDuplicateExceptionalList(uint8_t subcode, uint32_t type, BD_ADDR device_info, tBTM_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_CMPL_CBACK update_exceptional_list_cmp_cb);
 /*
 #ifdef __cplusplus
 }

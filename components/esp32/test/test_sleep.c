@@ -2,28 +2,29 @@
 #include <sys/time.h>
 #include <sys/param.h>
 #include "esp_sleep.h"
-#include "esp_clk.h"
+#include "esp32/clk.h"
 #include "driver/rtc_io.h"
 #include "soc/gpio_reg.h"
 #include "soc/rtc.h"
 #include "soc/uart_reg.h"
-#include "rom/uart.h"
+#include "esp32/rom/uart.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 #include "soc/rtc.h"            // for wakeup trigger defines
 #include "soc/rtc_cntl_reg.h"   // for read rtc registers directly (cause)
 #include "soc/soc.h"            // for direct register read macros
-#include "rom/rtc.h"
+#include "esp32/rom/rtc.h"
 #include "esp_newlib.h"
 #include "test_utils.h"
+#include "sdkconfig.h"
 
 #define ESP_EXT0_WAKEUP_LEVEL_LOW 0
 #define ESP_EXT0_WAKEUP_LEVEL_HIGH 1
 
 static struct timeval tv_start, tv_stop;
 
-
+#ifndef CONFIG_FREERTOS_UNICORE
 static void deep_sleep_task(void *arg)
 {
     esp_deep_sleep_start();
@@ -40,6 +41,7 @@ static void do_deep_sleep_from_app_cpu()
         ;
     }
 }
+#endif
 
 TEST_CASE("wake up from deep sleep using timer", "[deepsleep][reset=DEEPSLEEP_RESET]")
 {

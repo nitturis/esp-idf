@@ -136,10 +136,12 @@ void app_main()
     /* Bluetooth device name, connection mode and profile set up */
     bt_app_work_dispatch(bt_av_hdl_stack_evt, BT_APP_EVT_STACK_UP, NULL, 0, NULL);
 
+#if (CONFIG_BT_SSP_ENABLED == true)
     /* Set default parameters for Secure Simple Pairing */
     esp_bt_sp_param_t param_type = ESP_BT_SP_IOCAP_MODE;
     esp_bt_io_cap_t iocap = ESP_BT_IO_CAP_IO;
     esp_bt_gap_set_security_param(param_type, &iocap, sizeof(uint8_t));
+#endif
 
     /*
      * Set default parameters for Legacy Pairing
@@ -286,6 +288,8 @@ void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param)
         }
         break;
     }
+
+#if (CONFIG_BT_SSP_ENABLED == true)
     case ESP_BT_GAP_CFM_REQ_EVT:
         ESP_LOGI(BT_AV_TAG, "ESP_BT_GAP_CFM_REQ_EVT Please compare the numeric value: %d", param->cfm_req.num_val);
         esp_bt_gap_ssp_confirm_reply(param->cfm_req.bda, true);
@@ -296,6 +300,8 @@ void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param)
     case ESP_BT_GAP_KEY_REQ_EVT:
         ESP_LOGI(BT_AV_TAG, "ESP_BT_GAP_KEY_REQ_EVT Please enter passkey!");
         break;
+#endif
+
     default: {
         ESP_LOGI(BT_AV_TAG, "event: %d", event);
         break;
@@ -322,7 +328,7 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
         esp_a2d_source_init();
 
         /* set discoverable and connectable mode */
-        esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+        esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
 
         /* start device discovery */
         ESP_LOGI(BT_AV_TAG, "Starting device discovery...");
@@ -428,7 +434,7 @@ static void bt_app_av_state_connecting(uint16_t event, void *param)
             ESP_LOGI(BT_AV_TAG, "a2dp connected");
             s_a2d_state =  APP_AV_STATE_CONNECTED;
             s_media_state = APP_AV_MEDIA_STATE_IDLE;
-            esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_NONE);
+            esp_bt_gap_set_scan_mode(ESP_BT_NON_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
         } else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
             s_a2d_state =  APP_AV_STATE_UNCONNECTED;
         }
@@ -524,7 +530,7 @@ static void bt_app_av_state_connected(uint16_t event, void *param)
         if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
             ESP_LOGI(BT_AV_TAG, "a2dp disconnected");
             s_a2d_state = APP_AV_STATE_UNCONNECTED;
-            esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+            esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
         }
         break;
     }
@@ -558,7 +564,7 @@ static void bt_app_av_state_disconnecting(uint16_t event, void *param)
         if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
             ESP_LOGI(BT_AV_TAG, "a2dp disconnected");
             s_a2d_state =  APP_AV_STATE_UNCONNECTED;
-            esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+            esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
         }
         break;
     }

@@ -26,8 +26,8 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_now.h"
-#include "rom/ets_sys.h"
-#include "rom/crc.h"
+#include "esp32/rom/ets_sys.h"
+#include "esp32/rom/crc.h"
 #include "espnow_example.h"
 
 static const char *TAG = "espnow_example";
@@ -67,6 +67,10 @@ static void example_wifi_init(void)
      * been already on the same channel.
      */
     ESP_ERROR_CHECK( esp_wifi_set_channel(CONFIG_ESPNOW_CHANNEL, 0) );
+
+#if CONFIG_ENABLE_LONG_RANGE
+    ESP_ERROR_CHECK( esp_wifi_set_protocol(ESPNOW_WIFI_IF, WIFI_PROTOCOL_11B|WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N|WIFI_PROTOCOL_LR) );
+#endif
 }
 
 /* ESPNOW sending or receiving callback function is called in WiFi task.

@@ -1,4 +1,4 @@
-# expand_requires.cmake is a utility cmake script to expand component requirements early in the build,
+# expand_requirements.cmake is a utility cmake script to expand component requirements early in the build,
 # before the components are ready to be included.
 #
 # Parameters:
@@ -33,6 +33,8 @@ cmake_minimum_required(VERSION 3.5)
 include("${IDF_PATH}/tools/cmake/utilities.cmake")
 include("${IDF_PATH}/tools/cmake/component_utils.cmake")
 
+set(ESP_PLATFORM 1)
+
 if(NOT DEPENDENCIES_FILE)
     message(FATAL_ERROR "DEPENDENCIES_FILE must be set.")
 endif()
@@ -43,12 +45,6 @@ endif()
 spaces2list(COMPONENT_DIRS)
 
 spaces2list(COMPONENT_REQUIRES_COMMON)
-
-function(debug message)
-    if(DEBUG)
-        message(STATUS "${message}")
-    endif()
-endfunction()
 
 # Dummy register_component used to save requirements variables as global properties, for later expansion
 #
@@ -85,10 +81,6 @@ function(require_idf_targets)
     endif()
 endfunction()
 
-# Dummy call for ldgen_add_fragment_file
-function(ldgen_add_fragment_file files)
-endfunction()
-
 # expand_component_requirements: Recursively expand a component's requirements,
 # setting global properties BUILD_COMPONENTS & BUILD_COMPONENT_PATHS and
 # also invoking the components to call register_component() above,
@@ -100,9 +92,9 @@ function(expand_component_requirements component)
     endif()
     set_property(GLOBAL APPEND PROPERTY SEEN_COMPONENTS ${component})
 
-    find_component_path("${component}" "${ALL_COMPONENTS}" "${ALL_COMPONENT_PATHS}" component_path)
-    debug("Expanding dependencies of ${component} @ ${component_path}")
-    if(NOT component_path)
+    find_component_path("${component}" "${ALL_COMPONENTS}" "${ALL_COMPONENT_PATHS}" COMPONENT_PATH)
+    debug("Expanding dependencies of ${component} @ ${COMPONENT_PATH}")
+    if(NOT COMPONENT_PATH)
         set_property(GLOBAL APPEND PROPERTY COMPONENTS_NOT_FOUND ${component})
         return()
     endif()
@@ -112,7 +104,7 @@ function(expand_component_requirements component)
     unset(COMPONENT_REQUIRES)
     unset(COMPONENT_PRIV_REQUIRES)
     set(COMPONENT ${component})
-    include(${component_path}/CMakeLists.txt)
+    include(${COMPONENT_PATH}/CMakeLists.txt)
 
     get_property(requires GLOBAL PROPERTY "${component}_REQUIRES")
     get_property(requires_priv GLOBAL PROPERTY "${component}_PRIV_REQUIRES")
@@ -132,7 +124,7 @@ function(expand_component_requirements component)
     endif()
 
     # Now append this component to the full list (after its dependencies)
-    set_property(GLOBAL APPEND PROPERTY BUILD_COMPONENT_PATHS ${component_path})
+    set_property(GLOBAL APPEND PROPERTY BUILD_COMPONENT_PATHS ${COMPONENT_PATH})
     set_property(GLOBAL APPEND PROPERTY BUILD_COMPONENTS ${component})
 endfunction()
 
@@ -160,15 +152,15 @@ macro(filter_components_list)
             endif()
         else()
             set(add_component 1)
-
         endif()
 
         if(NOT ${component} IN_LIST EXCLUDE_COMPONENTS AND add_component EQUAL 1)
             list(APPEND components ${component})
             list(APPEND component_paths ${component_path})
 
-            if(TESTS_ALL EQUAL 1 OR TEST_COMPONENTS)
-                if(NOT TESTS_ALL EQUAL 1 AND TEST_COMPONENTS)
+            if(BUILD_TESTS EQUAL 1)
+
+                if(TEST_COMPONENTS)
                     if(${component} IN_LIST TEST_COMPONENTS)
                         set(add_test_component 1)
                     else()

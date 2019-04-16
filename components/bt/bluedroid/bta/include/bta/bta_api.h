@@ -399,6 +399,8 @@ typedef struct {
     UINT8                   tx_power;
 } tBTA_BLE_ADV_DATA;
 
+typedef void (tBTA_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_CMPL_CBACK) (tBTA_STATUS status, uint8_t subcode, uint32_t length, uint8_t *device_info);
+
 typedef void (tBTA_SET_ADV_DATA_CMPL_CBACK) (tBTA_STATUS status);
 
 typedef tBTM_START_ADV_CMPL_CBACK tBTA_START_ADV_CMPL_CBACK;
@@ -1022,6 +1024,7 @@ typedef struct {
 #define BTA_DM_DISC_CMPL_EVT            4       /* Discovery complete. */
 #define BTA_DM_DI_DISC_CMPL_EVT         5       /* Discovery complete. */
 #define BTA_DM_SEARCH_CANCEL_CMPL_EVT   6       /* Search cancelled */
+#define BTA_DM_INQ_DISCARD_NUM_EVT      7       /* The number of inquiry discarded packets */
 
 typedef UINT8 tBTA_DM_SEARCH_EVT;
 
@@ -1052,6 +1055,11 @@ typedef struct {
 typedef struct {
     UINT8           num_resps;          /* Number of inquiry responses. */
 } tBTA_DM_INQ_CMPL;
+
+/* Structure associated with BTA_DM_INQ_DISCARD_NUM_EVT */
+typedef struct {
+    UINT32           num_dis;          /* The number of inquiry discarded packets. */
+} tBTA_DM_INQ_DISCARD;
 
 /* Structure associated with BTA_DM_DI_DISC_CMPL_EVT */
 typedef struct {
@@ -1090,6 +1098,7 @@ typedef union {
     tBTA_DM_DISC_RES    disc_res;       /* Discovery result for a peer device. */
     tBTA_DM_DISC_BLE_RES    disc_ble_res;   /* Discovery result for GATT based service */
     tBTA_DM_DI_DISC_CMPL    di_disc;        /* DI discovery result for a peer device */
+    tBTA_DM_INQ_DISCARD     inq_dis;       /* the discarded packets information of inquiry */
 } tBTA_DM_SEARCH;
 
 /* Structure of search callback event and structures */
@@ -1441,7 +1450,7 @@ extern void BTA_DisableTestMode(void);
 *******************************************************************************/
 extern void BTA_DmSetDeviceName(const char *p_name);
 
-extern void BTA_DmUpdateWhiteList(BOOLEAN add_remove,  BD_ADDR remote_addr, tBTA_ADD_WHITELIST_CBACK *add_wl_cb);
+extern void BTA_DmUpdateWhiteList(BOOLEAN add_remove,  BD_ADDR remote_addr, tBLE_ADDR_TYPE addr_type, tBTA_ADD_WHITELIST_CBACK *add_wl_cb);
 
 extern void BTA_DmBleReadAdvTxPower(tBTA_CMPL_CB *cmpl_cb);
 
@@ -1886,12 +1895,13 @@ extern void BTA_DmBleConfirmReply(BD_ADDR bd_addr, BOOLEAN accept);
 **
 ** Parameters:      bd_addr          - BD address of the peer
 **                  dev_type         - Remote device's device type.
+**                  auth_mode        - auth mode
 **                  addr_type        - LE device address type.
 **
 ** Returns          void
 **
 *******************************************************************************/
-extern void BTA_DmAddBleDevice(BD_ADDR bd_addr, tBLE_ADDR_TYPE addr_type,
+extern void BTA_DmAddBleDevice(BD_ADDR bd_addr, tBLE_ADDR_TYPE addr_type, int auth_mode,
                                tBT_DEVICE_TYPE dev_type);
 
 
@@ -2267,6 +2277,24 @@ extern void BTA_DmBleSetScanRsp (tBTA_BLE_AD_MASK data_mask,
 *******************************************************************************/
 extern void BTA_DmBleSetScanRspRaw (UINT8 *p_raw_scan_rsp, UINT32 raw_scan_rsp_len,
                                     tBTA_SET_ADV_DATA_CMPL_CBACK *p_scan_rsp_data_cback);
+
+/*******************************************************************************
+**
+** Function         BTA_DmUpdateDuplicateExceptionalList
+**
+** Description      This function is called to update duplicate scan exceptional list
+**
+** Parameters       subcode : add, remove or clean duplicate scan exceptional list.
+**                  type : device info type.
+**                  device_info:  device info
+**                  p_update_duplicate_ignore_list_cback :  update complete callback.
+**
+** Returns          None
+**
+*******************************************************************************/
+extern void BTA_DmUpdateDuplicateExceptionalList(UINT8 subcode, UINT32 type, 
+                                                BD_ADDR device_info, 
+                                                tBTA_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_CMPL_CBACK p_update_duplicate_exceptional_list_cback);
 
 /*******************************************************************************
 **

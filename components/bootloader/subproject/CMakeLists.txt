@@ -10,20 +10,29 @@ if(NOT IDF_PATH)
         "in by the parent build process.")
 endif()
 
-set(COMPONENTS bootloader esptool_py esp32 partition_table soc bootloader_support log spi_flash micro-ecc soc main)
+set(COMPONENTS bootloader esptool_py partition_table soc bootloader_support log spi_flash micro-ecc main efuse)
 set(BOOTLOADER_BUILD 1)
 add_definitions(-DBOOTLOADER_BUILD=1)
 
-set(COMPONENT_REQUIRES_COMMON log esp32 soc)
+set(COMPONENT_REQUIRES_COMMON log soc esp_rom esp_common xtensa)
 
 include("${IDF_PATH}/tools/cmake/project.cmake")
 project(bootloader)
 
 target_linker_script(bootloader.elf
-    "main/esp32.bootloader.ld"
-    "main/esp32.bootloader.rom.ld")
-# Imported from esp32 component
-target_linker_script(bootloader.elf ${ESP32_BOOTLOADER_LINKER_SCRIPTS})
+    "main/${IDF_TARGET}.bootloader.ld"
+    "main/${IDF_TARGET}.bootloader.rom.ld"
+)
+
+# as cmake won't attach linker args to a header-only library, attach
+# linker args directly to the bootloader.elf
+# esp32.rom.newlib-funcs.ld is included to use memset/memcpy.
+set(BOOTLOADER_LINKER_SCRIPTS
+    "${IDF_PATH}/components/esp_rom/${IDF_TARGET}/ld/${IDF_TARGET}.rom.ld"
+    "${IDF_PATH}/components/esp_rom/${IDF_TARGET}/ld/${IDF_TARGET}.rom.newlib-funcs.ld"
+    "${IDF_PATH}/components/${IDF_TARGET}/ld/${IDF_TARGET}.peripherals.ld")
+
+target_linker_script(bootloader.elf ${BOOTLOADER_LINKER_SCRIPTS})
 
 target_link_libraries(bootloader.elf gcc)
 

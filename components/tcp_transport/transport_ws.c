@@ -8,6 +8,7 @@
 #include "esp_transport_tcp.h"
 #include "esp_transport_ws.h"
 #include "esp_transport_utils.h"
+#include "transport_strcasestr.h"
 #include "mbedtls/base64.h"
 #include "mbedtls/sha1.h"
 
@@ -60,10 +61,9 @@ static char *trimwhitespace(const char *str)
     return (char *)str;
 }
 
-
 static char *get_http_header(const char *buffer, const char *key)
 {
-    char *found = strstr(buffer, key);
+    char *found = transport_strcasestr(buffer, key);
     if (found) {
         found += strlen(key);
         char *found_end = strstr(found, "\r\n");
@@ -80,7 +80,8 @@ static int ws_connect(esp_transport_handle_t t, const char *host, int port, int 
 {
     transport_ws_t *ws = esp_transport_get_context_data(t);
     if (esp_transport_connect(ws->parent, host, port, timeout_ms) < 0) {
-        ESP_LOGE(TAG, "Error connect to ther server");
+        ESP_LOGE(TAG, "Error connect to the server");
+        return -1;
     }
 
     unsigned char random_key[16];
@@ -191,7 +192,10 @@ static int ws_read(esp_transport_handle_t t, char *buffer, int len, int timeout_
     if ((poll_read = esp_transport_poll_read(ws->parent, timeout_ms)) <= 0) {
         return poll_read;
     }
-    if ((rlen = esp_transport_read(ws->parent, buffer, len, timeout_ms)) <= 0) {
+
+    // Receive and process header first (based on header size)
+    int header = 2;
+    if ((rlen = esp_transport_read(ws->parent, buffer, header, timeout_ms)) <= 0) {
         ESP_LOGE(TAG, "Error read data");
         return rlen;
     }
@@ -203,11 +207,20 @@ static int ws_read(esp_transport_handle_t t, char *buffer, int len, int timeout_
     ESP_LOGD(TAG, "Opcode: %d, mask: %d, len: %d\r\n", opcode, mask, payload_len);
     if (payload_len == 126) {
         // headerLen += 2;
+        if ((rlen = esp_transport_read(ws->parent, data_ptr, header, timeout_ms)) <= 0) {
+            ESP_LOGE(TAG, "Error read data");
+            return rlen;
+        }
         payload_len = data_ptr[0] << 8 | data_ptr[1];
         payload_len_buff = len - 4;
         data_ptr += 2;
     } else if (payload_len == 127) {
         // headerLen += 8;
+        header = 8;
+        if ((rlen = esp_transport_read(ws->parent, data_ptr, header, timeout_ms)) <= 0) {
+            ESP_LOGE(TAG, "Error read data");
+            return rlen;
+        }
 
         if (data_ptr[0] != 0 || data_ptr[1] != 0 || data_ptr[2] != 0 || data_ptr[3] != 0) {
             // really too big!
@@ -218,9 +231,16 @@ static int ws_read(esp_transport_handle_t t, char *buffer, int len, int timeout_
         data_ptr += 8;
         payload_len_buff = len - 10;
     }
+
     if (payload_len > payload_len_buff) {
-        ESP_LOGD(TAG, "Actual data received (%d) are longer than mqtt buffer (%d)", payload_len, payload_len_buff);
+        ESP_LOGD(TAG, "Actual data to receive (%d) are longer than ws buffer (%d)", payload_len, payload_len_buff);
         payload_len = payload_len_buff;
+    }
+
+    // Then receive and process payload
+    if ((rlen = esp_transport_read(ws->parent, data_ptr, payload_len, timeout_ms)) <= 0) {
+        ESP_LOGE(TAG, "Error read data");
+        return rlen;
     }
 
     if (mask) {

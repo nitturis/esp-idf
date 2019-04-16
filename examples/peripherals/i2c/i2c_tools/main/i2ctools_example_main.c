@@ -56,9 +56,8 @@ static void initialize_nvs()
 
 static void initialize_console()
 {
-    /* Disable buffering on stdin and stdout */
+    /* Disable buffering on stdin */
     setvbuf(stdin, NULL, _IONBF, 0);
-    setvbuf(stdout, NULL, _IONBF, 0);
 
     /* Minicom, screen, idf_monitor send CR when ENTER key is pressed */
     esp_vfs_dev_uart_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
@@ -86,8 +85,8 @@ static void initialize_console()
 
     /* Initialize the console */
     esp_console_config_t console_config = {
-        .max_cmdline_args = 8,
-        .max_cmdline_length = 256,
+        .max_cmdline_args = CONFIG_MAX_CMD_ARGUMENTS,
+        .max_cmdline_length = CONFIG_MAX_CMD_LENGTH,
 #if CONFIG_LOG_COLORS
         .hint_color = atoi(LOG_COLOR_CYAN)
 #endif

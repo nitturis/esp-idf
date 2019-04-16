@@ -19,11 +19,11 @@
 #include "sdkconfig.h"
 #include "esp_attr.h"
 #include "esp_log.h"
-#include "esp_clk.h"
+#include "esp32/clk.h"
 #include "esp_clk_internal.h"
-#include "rom/ets_sys.h"
-#include "rom/uart.h"
-#include "rom/rtc.h"
+#include "esp32/rom/ets_sys.h"
+#include "esp32/rom/uart.h"
+#include "esp32/rom/rtc.h"
 #include "soc/soc.h"
 #include "soc/rtc.h"
 #include "soc/rtc_wdt.h"
@@ -297,10 +297,10 @@ void esp_perip_clk_init(void)
 //a weird mode where clock to the peripheral is disabled but reset is also disabled, it 'hangs'
 //in a state where it outputs a continuous 80MHz signal. Mask its bit here because we should
 //not modify that state, regardless of what we calculated earlier.
-    if (!spicommon_periph_in_use(HSPI_HOST)) {
+    if (spicommon_periph_in_use(HSPI_HOST)) {
         common_perip_clk &= ~DPORT_SPI2_CLK_EN;
     }
-    if (!spicommon_periph_in_use(VSPI_HOST)) {
+    if (spicommon_periph_in_use(VSPI_HOST)) {
         common_perip_clk &= ~DPORT_SPI3_CLK_EN;
     }
 #endif

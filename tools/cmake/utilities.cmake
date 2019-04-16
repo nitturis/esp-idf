@@ -73,30 +73,6 @@ function(move_if_different source destination)
 
 endfunction()
 
-
-# add_compile_options variant for C++ code only
-#
-# This adds global options, set target properties for
-# component-specific flags
-function(add_cxx_compile_options)
-    foreach(option ${ARGV})
-        # note: the Visual Studio Generator doesn't support this...
-        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:${option}>)
-    endforeach()
-endfunction()
-
-# add_compile_options variant for C code only
-#
-# This adds global options, set target properties for
-# component-specific flags
-function(add_c_compile_options)
-    foreach(option ${ARGV})
-        # note: the Visual Studio Generator doesn't support this...
-        add_compile_options($<$<COMPILE_LANGUAGE:C>:${option}>)
-    endforeach()
-endfunction()
-
-
 # target_add_binary_data adds binary data into the built target,
 # by converting it to a generated source file which is then compiled
 # to a binary object as part of the build
@@ -105,7 +81,7 @@ function(target_add_binary_data target embed_file embed_type)
     get_filename_component(embed_file "${embed_file}" ABSOLUTE)
 
     get_filename_component(name "${embed_file}" NAME)
-    set(embed_srcfile "${CMAKE_BINARY_DIR}/${name}.S")
+    set(embed_srcfile "${IDF_BUILD_ARTIFACTS_DIR}/${name}.S")
 
     add_custom_command(OUTPUT "${embed_srcfile}"
         COMMAND "${CMAKE_COMMAND}"
@@ -115,7 +91,7 @@ function(target_add_binary_data target embed_file embed_type)
         -P "${IDF_PATH}/tools/cmake/scripts/data_file_embed_asm.cmake"
         MAIN_DEPENDENCY "${embed_file}"
         DEPENDS "${IDF_PATH}/tools/cmake/scripts/data_file_embed_asm.cmake"
-        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+        WORKING_DIRECTORY "${IDF_BUILD_ARTIFACTS_DIR}"
         VERBATIM)
 
     set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${embed_srcfile}")

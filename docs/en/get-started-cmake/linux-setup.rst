@@ -13,15 +13,15 @@ To compile with ESP-IDF you need to get the following packages:
 
 - CentOS 7::
 
-    sudo yum install git wget ncurses-devel flex bison gperf python pyserial cmake ninja-build ccache
+    sudo yum install git wget ncurses-devel flex bison gperf python pyserial python-pyelftools cmake ninja-build ccache
 
 - Ubuntu and Debian::
 
-    sudo apt-get install git wget libncurses-dev flex bison gperf python python-pip python-setuptools python-serial cmake ninja-build ccache
+    sudo apt-get install git wget libncurses-dev flex bison gperf python python-pip python-setuptools python-serial python-cryptography python-future python-pyparsing python-pyelftools cmake ninja-build ccache
 
 - Arch::
 
-    sudo pacman -S --needed gcc git make ncurses flex bison gperf python2-pyserial cmake ninja ccache
+    sudo pacman -S --needed gcc git make ncurses flex bison gperf python2-pyserial python2-cryptography python2-future python2-pyparsing python2-pyelftools cmake ninja ccache
 
 .. note::
     CMake version 3.5 or newer is required for use with ESP-IDF. Older Linux distributions may require updating, enabling of a "backports" repository, or installing of a "cmake3" package rather than "cmake".
@@ -73,10 +73,10 @@ ESP32 toolchain for Linux is available for download from Espressif website:
 
         printenv PATH
 
-    You are looking for similar result containing toolchain's path at the end of displayed string::
+    You are looking for similar result containing toolchain's path at the beginning of displayed string::
 
         $ printenv PATH
-        /home/user-name/bin:/home/user-name/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/user-name/esp/xtensa-esp32-elf/bin
+        /home/user-name/esp/xtensa-esp32-elf/bin:/home/user-name/bin:/home/user-name/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 
     Instead of ``/home/user-name`` there should be a home path specific to your installation.
 
@@ -105,7 +105,7 @@ Alternatively, use crosstool-NG to compile a gdb that links against ncurses 6.
 Next Steps
 ==========
 
-To carry on with development environment setup, proceed to section :ref:`get-started-get-esp-idf-cmake`.
+To carry on with development environment setup, proceed to :ref:`get-started-get-esp-idf-cmake`.
 
 
 Related Documents
